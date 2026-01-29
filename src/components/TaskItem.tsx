@@ -58,6 +58,15 @@ export default function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
                             </div>
                         )}
 
+                        {task.category_id && task.categories && (
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/5">
+                                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: task.categories.color }} />
+                                <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-medium">
+                                    {task.categories.name}
+                                </span>
+                            </div>
+                        )}
+
                         {task.priority && task.priority !== 'low' && (
                             <div className="flex items-center gap-1">
                                 <div className={cn(

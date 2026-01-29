@@ -101,16 +101,26 @@ export function AddTask({ onTaskAdded }: { onTaskAdded: () => void }) {
 
 function TaskForm({ className, onSuccess }: { className?: string, onSuccess: () => void }) {
     const [title, setTitle] = React.useState("")
-    const [priority, setPriority] = React.useState("medium")
+    const [priority, setPriority] = React.useState<"low" | "medium" | "high" | "urgent">("medium")
+    const [categoryId, setCategoryId] = React.useState<string | null>(null)
+    const [categories, setCategories] = React.useState<{ id: string, name: string, color: string }[]>([])
     const [date, setDate] = React.useState<Date>()
     const [loading, setLoading] = React.useState(false)
+
+    // Fetch categories on mount
+    React.useEffect(() => {
+        const fetchCategories = async () => {
+            const { data } = await supabase.from('categories').select('*')
+            if (data) setCategories(data)
+        }
+        fetchCategories()
+    }, [])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!title) return
         setLoading(true)
 
-        // Get current user
         const { data: { user } } = await supabase.auth.getUser()
 
         if (user) {
@@ -120,6 +130,7 @@ function TaskForm({ className, onSuccess }: { className?: string, onSuccess: () 
                     title,
                     priority,
                     due_date: date?.toISOString(),
+                    category_id: categoryId,
                     user_id: user.id
                 } as any)
 
@@ -127,6 +138,7 @@ function TaskForm({ className, onSuccess }: { className?: string, onSuccess: () 
                 setTitle("")
                 setPriority("medium")
                 setDate(undefined)
+                setCategoryId(null)
                 onSuccess()
             } else {
                 console.error(error)
@@ -135,40 +147,57 @@ function TaskForm({ className, onSuccess }: { className?: string, onSuccess: () 
         setLoading(false)
     }
 
+    const priorities = [
+        { value: "low", label: "Low", color: "bg-zinc-500" },
+        { value: "medium", label: "Medium", color: "bg-blue-500" },
+        { value: "high", label: "High", color: "bg-orange-500" },
+        { value: "urgent", label: "Urgent", color: "bg-red-500" },
+    ]
+
     return (
-        <form onSubmit={handleSubmit} className={cn("grid items-start gap-4", className)}>
+        <form onSubmit={handleSubmit} className={cn("grid items-start gap-6", className)}>
             <div className="grid gap-2">
-                <Label htmlFor="title">Title</Label>
+                <Label htmlFor="title" className="text-zinc-400">Task Name</Label>
                 <Input
                     id="title"
-                    placeholder="Buy groceries"
+                    placeholder="Create a new task..."
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     autoFocus
+                    className="border-none bg-white/5 text-lg h-12 rounded-2xl focus-visible:ring-1 focus-visible:ring-zinc-700"
                 />
             </div>
+
             <div className="grid gap-2">
-                <Label htmlFor="priority">Priority</Label>
-                <Select value={priority} onValueChange={setPriority}>
-                    <SelectTrigger id="priority">
-                        <SelectValue placeholder="Select priority" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                        <SelectItem value="urgent">Urgent</SelectItem>
-                    </SelectContent>
-                </Select>
+                <Label className="text-zinc-400">Priority</Label>
+                <div className="flex bg-zinc-900/50 p-1 rounded-2xl border border-white/5">
+                    {priorities.map((p) => (
+                        <button
+                            key={p.value}
+                            type="button"
+                            onClick={() => setPriority(p.value as any)}
+                            className={cn(
+                                "flex-1 py-2 text-xs font-medium rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5",
+                                priority === p.value
+                                    ? "bg-white/10 text-white shadow-sm"
+                                    : "text-zinc-500 hover:text-zinc-300"
+                            )}
+                        >
+                            <div className={cn("w-1.5 h-1.5 rounded-full", p.color)} />
+                            {p.label}
+                        </button>
+                    ))}
+                </div>
             </div>
+
             <div className="grid gap-2">
-                <Label htmlFor="date">Due Date</Label>
+                <Label className="text-zinc-400">Due Date</Label>
                 <Popover>
                     <PopoverTrigger asChild>
                         <Button
                             variant={"outline"}
                             className={cn(
-                                "w-full justify-start text-left font-normal",
+                                "w-full justify-start text-left font-normal bg-white/5 border-white/5 rounded-2xl h-12 hover:bg-white/10 hover:text-white",
                                 !date && "text-muted-foreground"
                             )}
                         >
@@ -176,17 +205,19 @@ function TaskForm({ className, onSuccess }: { className?: string, onSuccess: () 
                             {date ? format(date, "PPP") : <span>Pick a date</span>}
                         </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
+                    <PopoverContent className="w-auto p-0 bg-zinc-950 border-zinc-800" align="start">
                         <Calendar
                             mode="single"
                             selected={date}
                             onSelect={setDate}
                             initialFocus
+                            className="text-white"
                         />
                     </PopoverContent>
                 </Popover>
             </div>
-            <Button type="submit" disabled={loading}>
+
+            <Button type="submit" disabled={loading} className="h-12 rounded-2xl bg-white text-black hover:bg-zinc-200 mt-2 font-bold">
                 {loading ? "Adding..." : "Add Task"}
             </Button>
         </form>

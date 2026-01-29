@@ -29,4 +29,15 @@ export interface Task {
     due_date?: string
     category_id?: string
     created_at: string
+    categories?: {
+        name: string
+        color: string
+    }
+}
+
+export interface Category {
+    id: string
+    user_id: string
+    name: string
+    color: string
 }

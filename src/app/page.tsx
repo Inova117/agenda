@@ -22,7 +22,7 @@ export default function Home() {
 
     const { data, error } = await supabase
       .from('tasks')
-      .select('*')
+      .select('*, categories(name, color)')
       .order('is_completed', { ascending: true }) // uncompleted first
       .order('due_date', { ascending: true })     // then by date
       .order('created_at', { ascending: false })
@@ -46,11 +46,21 @@ export default function Home() {
           setSession(session)
           if (!session) {
             router.push('/login')
+          } else {
+            // Auto-seed categories if none exist
+            const { count } = await supabase.from('categories').select('*', { count: 'exact', head: true })
+            if (count === 0) {
+              await supabase.from('categories').insert([
+                { user_id: session.user.id, name: 'Personal', color: '#3b82f6' }, // Blue
+                { user_id: session.user.id, name: 'Work', color: '#f97316' },     // Orange
+                { user_id: session.user.id, name: 'Ideas', color: '#10b981' },    // Green
+                { user_id: session.user.id, name: 'Errands', color: '#ef4444' }   // Red
+              ])
+            }
           }
         }
       } catch (error) {
         console.error("Auth session error:", error)
-        // Even on error, stop loading so user isn't stuck
       } finally {
         if (mounted) setLoading(false)
       }
