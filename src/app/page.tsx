@@ -6,9 +6,10 @@ import { createClient } from '@supabase/supabase-js'
 import { Button } from "@/components/ui/button"
 import { Plus, LogOut } from "lucide-react"
 import { AddTask } from "@/components/AddTask"
-import { TaskItem } from "@/components/TaskItem"
+import TaskItem from "@/components/TaskItem"
 import { PushNotificationManager } from "@/components/PushNotificationManager"
 import { supabase } from "@/lib/supabase" // usage of the singleton
+import { format } from "date-fns"
 
 export default function Home() {
   const router = useRouter()
@@ -152,6 +153,22 @@ export default function Home() {
                 <p className="text-sm">Add one to get started!</p>
               </div>
             ) : null}
+
+            {/* New UI elements for Journal */}
+            <div className="flex items-center justify-between mb-8 pt-4">
+              <div>
+                <h1 className="text-4xl font-serif font-bold tracking-tight text-white mb-1">
+                  Journal
+                </h1>
+                <p className="text-zinc-400 font-sans text-lg">
+                  {format(new Date(), 'EEEE, MMMM do')}
+                </p>
+              </div>
+              <PushNotificationManager />
+            </div>
+
+            {/* Decorative Gradient Blob */}
+            <div className="fixed top-0 right-0 -z-10 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
 
             {activeTasks.map(task => (
               <TaskItem key={task.id} task={task} onToggle={handleToggleTask} onDelete={handleDeleteTask} />
