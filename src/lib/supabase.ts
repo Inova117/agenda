@@ -1,0 +1,20 @@
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error("Missing Supabase Environment Variables")
+}
+
+const globalForSupabase = global as unknown as { supabase: any }
+
+export const supabase = (globalForSupabase.supabase || createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: false, // Important for Electron/PWA to avoid URL parsing errors
+    }
+})) as any
+
+if (process.env.NODE_ENV !== 'production') globalForSupabase.supabase = supabase
