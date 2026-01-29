@@ -154,21 +154,21 @@ export default function Home() {
               </div>
             ) : null}
 
-            {/* New UI elements for Journal */}
-            <div className="flex items-center justify-between mb-8 pt-4">
+            {/* New UI elements for Journal - Apple Style Header */}
+            <div className="flex items-center justify-between mb-6 pt-6">
               <div>
-                <h1 className="text-4xl font-serif font-bold tracking-tight text-white mb-1">
+                <h1 className="text-4xl font-serif font-bold tracking-tight text-white/90 mb-1">
                   Journal
                 </h1>
-                <p className="text-zinc-400 font-sans text-lg">
+                <p className="text-zinc-500 font-sans text-lg">
                   {format(new Date(), 'EEEE, MMMM do')}
                 </p>
               </div>
               <PushNotificationManager />
             </div>
 
-            {/* Decorative Gradient Blob */}
-            <div className="fixed top-0 right-0 -z-10 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
+            {/* Subtle top glow instead of blob */}
+            <div className="fixed top-0 left-0 right-0 h-[200px] bg-gradient-to-b from-zinc-900/20 to-transparent pointer-events-none" />
 
             {activeTasks.map(task => (
               <TaskItem key={task.id} task={task} onToggle={handleToggleTask} onDelete={handleDeleteTask} />

@@ -20,20 +20,20 @@ export default function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
             whileHover={{ y: -2 }}
             whileTap={{ scale: 0.98 }}
             className={cn(
-                "group relative flex items-center justify-between p-5 rounded-3xl mb-4 transition-all duration-300",
+                "group relative flex items-center justify-between p-5 rounded-3xl mb-3 transition-all duration-300",
                 task.is_completed
-                    ? "bg-zinc-900/50 border border-transparent opacity-60"
-                    : "bg-card border border-border shadow-sm hover:shadow-md hover:border-primary/20"
+                    ? "bg-transparent border border-white/5 opacity-50"
+                    : "bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 hover:border-white/20 shadow-sm"
             )}
         >
             <div className="flex items-center gap-4 flex-1">
                 <button
                     onClick={() => onToggle(task.id, !task.is_completed)}
                     className={cn(
-                        "flex items-center justify-center w-6 h-6 rounded-full border-2 transition-all duration-300",
+                        "flex items-center justify-center w-6 h-6 rounded-full border transition-all duration-300",
                         task.is_completed
-                            ? "bg-primary border-primary text-primary-foreground"
-                            : "border-zinc-500 hover:border-primary"
+                            ? "bg-red-500 border-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.4)]"
+                            : "border-zinc-500 hover:border-red-400 bg-transparent"
                     )}
                 >
                     {task.is_completed && <Check size={14} strokeWidth={3} />}
@@ -42,7 +42,7 @@ export default function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
                 <div className="flex flex-col">
                     <span className={cn(
                         "text-lg font-sans font-medium transition-all duration-300",
-                        task.is_completed ? "text-zinc-500 line-through" : "text-foreground"
+                        task.is_completed ? "text-zinc-600 line-through" : "text-zinc-100"
                     )}>
                         {task.title}
                     </span>
