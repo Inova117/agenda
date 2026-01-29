@@ -28,7 +28,10 @@ export default function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
         >
             <div className="flex items-center gap-4 flex-1">
                 <button
-                    onClick={() => onToggle(task.id, !task.is_completed)}
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        onToggle(task.id, !task.is_completed)
+                    }}
                     className={cn(
                         "flex items-center justify-center w-6 h-6 rounded-full border transition-all duration-300",
                         task.is_completed
