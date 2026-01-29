@@ -39,13 +39,34 @@ export default function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
                     {task.is_completed && <Check size={14} strokeWidth={3} />}
                 </button>
 
-                <div className="flex flex-col">
+                <div className="flex flex-col gap-0.5">
                     <span className={cn(
                         "text-lg font-sans font-medium transition-all duration-300",
                         task.is_completed ? "text-zinc-600 line-through" : "text-zinc-100"
                     )}>
                         {task.title}
                     </span>
+
+                    <div className="flex items-center gap-3 text-xs text-zinc-500 font-sans">
+                        {task.due_date && (
+                            <div className="flex items-center gap-1">
+                                <Calendar size={12} className="text-zinc-600" />
+                                <span>{format(new Date(task.due_date), 'MMM d')}</span>
+                            </div>
+                        )}
+
+                        {task.priority && task.priority !== 'low' && (
+                            <div className="flex items-center gap-1">
+                                <div className={cn(
+                                    "w-1.5 h-1.5 rounded-full",
+                                    task.priority === 'urgent' ? "bg-red-500" :
+                                        task.priority === 'high' ? "bg-orange-500" :
+                                            "bg-yellow-500"
+                                )} />
+                                <span className="capitalize">{task.priority}</span>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 

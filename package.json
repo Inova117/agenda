@@ -26,6 +26,7 @@
       "output": "dist"
     },
     "linux": {
+      "icon": "public/icon-512.png",
       "target": [
         "AppImage",
         "deb"
