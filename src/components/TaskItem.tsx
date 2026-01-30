@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Check, Trash2, Calendar } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
+import { memo } from 'react'
 
 interface TaskItemProps {
     task: Task
@@ -10,7 +11,7 @@ interface TaskItemProps {
     onDelete: (id: string) => void
 }
 
-export default function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
+const TaskItem = memo(function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
     // We use a motion value to track drag position if we want dynamic opacity (optional), 
     // but for now simple onDragEnd logic is cleaner.
 
@@ -51,17 +52,18 @@ export default function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
                 layout
                 drag="x"
                 dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.2}
+                dragElastic={0.1}
                 onDragEnd={handleDragEnd}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 whileTap={{ cursor: "grabbing" }}
+                style={{ willChange: "transform" }}
                 className={cn(
-                    "relative flex items-center justify-between p-5 rounded-3xl transition-all duration-300 z-10",
+                    "relative flex items-center justify-between p-5 rounded-3xl transition-colors duration-300 z-10",
                     task.is_completed
-                        ? "bg-black/40 border border-white/5 opacity-50 backdrop-blur-sm"
-                        : "bg-zinc-900/80 backdrop-blur-md border border-white/5 shadow-sm"
+                        ? "bg-black/40 border border-white/5 opacity-50"
+                        : "bg-zinc-900 border border-white/5 shadow-sm"
                 )}
             >
                 <div className="flex items-center gap-4 flex-1 pointer-events-none select-none">
@@ -117,4 +119,6 @@ export default function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
             </motion.div>
         </div>
     )
-}
+})
+
+export default TaskItem
