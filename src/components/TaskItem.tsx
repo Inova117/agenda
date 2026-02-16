@@ -21,12 +21,16 @@ const TaskItem = memo(function TaskItem({ task, onToggle, onDelete }: TaskItemPr
 
     const handleDragEnd = (event: any, info: any) => {
         const offset = info.offset.x
-        const threshold = 70
+        const threshold = 50 // Lowered for easier activation
+
+        console.log('Drag ended:', { offset, threshold })
 
         if (offset > threshold) {
+            console.log('Delete action triggered')
             onDelete(task.id)
         } else if (offset < -threshold) {
-            onToggle(task.id, !task.is_completed)
+            console.log('Toggle action triggered', { taskId: task.id, currentStatus: task.is_completed })
+            onToggle(task.id, task.is_completed)
         }
     }
 
