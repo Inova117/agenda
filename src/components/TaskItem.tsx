@@ -57,8 +57,7 @@ const TaskItem = memo(function TaskItem({ task, onToggle, onDelete }: TaskItemPr
             <motion.div
                 style={{ x, willChange: "transform" }}
                 drag="x"
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.6} // Slightly stiffer for faster feel
+                dragElastic={0.7}
                 onDragEnd={handleDragEnd}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -71,22 +70,7 @@ const TaskItem = memo(function TaskItem({ task, onToggle, onDelete }: TaskItemPr
                         : "bg-zinc-900 border border-white/5 shadow-sm"
                 )}
             >
-                <div className="flex items-center gap-4 flex-1 pointer-events-none select-none">
-                    {/* Visual Checkbox (Interactive) */}
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation()
-                            onToggle(task.id, !task.is_completed)
-                        }}
-                        className={cn(
-                            "flex items-center justify-center w-6 h-6 rounded-full border transition-all duration-300 shrink-0 cursor-pointer hover:scale-110 active:scale-95 pointer-events-auto",
-                            task.is_completed
-                                ? "bg-red-500 border-red-500 text-white"
-                                : "border-zinc-500 hover:border-zinc-300 bg-transparent"
-                        )}>
-                        {task.is_completed && <Check size={14} strokeWidth={3} />}
-                    </button>
-
+                <div className="flex items-center gap-4 flex-1 select-none">
                     <div className="flex flex-col gap-0.5">
                         <span className={cn(
                             "text-lg font-sans font-medium transition-all duration-300",
