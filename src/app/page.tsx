@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import { Button } from "@/components/ui/button"
@@ -91,9 +91,9 @@ export default function Home() {
     }
   }, [session, fetchTasks])
 
-  const handleToggleTask = async (id: string, currentStatus: boolean) => {
+  const handleToggleTask = useCallback(async (id: string, currentStatus: boolean) => {
     // Optimistic update
-    setTasks(tasks.map(t => t.id === id ? { ...t, is_completed: !currentStatus } : t))
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, is_completed: !currentStatus } : t))
 
     const { error } = await supabase
       .from('tasks')
@@ -104,11 +104,11 @@ export default function Home() {
       // Revert on error
       fetchTasks()
     }
-  }
+  }, [fetchTasks])
 
-  const handleDeleteTask = async (id: string) => {
+  const handleDeleteTask = useCallback(async (id: string) => {
     // Optimistic update
-    setTasks(tasks.filter(t => t.id !== id))
+    setTasks(prev => prev.filter(t => t.id !== id))
 
     const { error } = await supabase
       .from('tasks')
@@ -118,12 +118,15 @@ export default function Home() {
     if (error) {
       fetchTasks()
     }
-  }
+  }, [fetchTasks])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
     router.push('/login')
   }
+
+  const activeTasks = useMemo(() => tasks.filter(t => !t.is_completed), [tasks])
+  const completedTasks = useMemo(() => tasks.filter(t => t.is_completed), [tasks])
 
   if (loading) {
     return <div className="flex h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950">Loading...</div>
@@ -132,9 +135,6 @@ export default function Home() {
   if (!session) {
     return null
   }
-
-  const activeTasks = tasks.filter(t => !t.is_completed)
-  const completedTasks = tasks.filter(t => t.is_completed)
 
   return (
     <div className="flex min-h-screen flex-col bg-zinc-50 text-zinc-900 dark:bg-black dark:text-zinc-50 pb-24">

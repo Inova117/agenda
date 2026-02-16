@@ -1,5 +1,5 @@
 import { Task } from '@/lib/supabase'
-import { motion } from 'framer-motion'
+import { motion, useMotionValue, useTransform } from 'framer-motion'
 import { Check, Trash2, Calendar } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
@@ -12,18 +12,20 @@ interface TaskItemProps {
 }
 
 const TaskItem = memo(function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
-    // We use a motion value to track drag position if we want dynamic opacity (optional), 
-    // but for now simple onDragEnd logic is cleaner.
+    const x = useMotionValue(0)
+    // Optimized ranges to avoid clamping calculations where possible
+    const deleteOpacity = useTransform(x, [60, 100], [0, 1])
+    const deleteScale = useTransform(x, [60, 100], [0.8, 1.2])
+    const completeOpacity = useTransform(x, [-60, -100], [0, 1])
+    const completeScale = useTransform(x, [-60, -100], [0.8, 1.2])
 
     const handleDragEnd = (event: any, info: any) => {
         const offset = info.offset.x
-        const threshold = 100
+        const threshold = 70
 
         if (offset > threshold) {
-            // Swiped Right -> Delete
             onDelete(task.id)
         } else if (offset < -threshold) {
-            // Swiped Left -> Toggle Complete
             onToggle(task.id, !task.is_completed)
         }
     }
@@ -34,31 +36,34 @@ const TaskItem = memo(function TaskItem({ task, onToggle, onDelete }: TaskItemPr
             <div className="absolute inset-0 flex items-center justify-between rounded-3xl overflow-hidden px-4">
                 {/* Delete Action (Visible when sliding Right) */}
                 <div className="flex items-center justify-start w-full h-full bg-red-500/20 rounded-3xl pl-6">
-                    <Trash2 className="text-red-500" size={24} />
-                    <span className="ml-2 font-bold text-red-500 text-sm tracking-widest uppercase">Delete</span>
+                    <motion.div style={{ opacity: deleteOpacity, scale: deleteScale }} className="flex items-center gap-2">
+                        <Trash2 className="text-red-500" size={24} />
+                        <span className="font-bold text-red-500 text-sm tracking-widest uppercase">Delete</span>
+                    </motion.div>
                 </div>
 
-                {/* Complete Action (Visible when sliding Left) - Absolute positioned to be on right */}
+                {/* Complete Action (Visible when sliding Left) */}
                 <div className="absolute inset-0 flex items-center justify-end w-full h-full bg-green-500/20 rounded-3xl pr-6">
-                    <span className="mr-2 font-bold text-green-500 text-sm tracking-widest uppercase">
-                        {task.is_completed ? "Undo" : "Done"}
-                    </span>
-                    <Check className="text-green-500" size={24} />
+                    <motion.div style={{ opacity: completeOpacity, scale: completeScale }} className="flex items-center gap-2">
+                        <span className="font-bold text-green-500 text-sm tracking-widest uppercase">
+                            {task.is_completed ? "Undo" : "Done"}
+                        </span>
+                        <Check className="text-green-500" size={24} />
+                    </motion.div>
                 </div>
             </div>
 
             {/* Foreground Card */}
             <motion.div
-                layout
+                style={{ x, willChange: "transform" }}
                 drag="x"
                 dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.1}
+                dragElastic={0.6} // Slightly stiffer for faster feel
                 onDragEnd={handleDragEnd}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 whileTap={{ cursor: "grabbing" }}
-                style={{ willChange: "transform" }}
                 className={cn(
                     "relative flex items-center justify-between p-5 rounded-3xl transition-colors duration-300 z-10",
                     task.is_completed
@@ -67,15 +72,20 @@ const TaskItem = memo(function TaskItem({ task, onToggle, onDelete }: TaskItemPr
                 )}
             >
                 <div className="flex items-center gap-4 flex-1 pointer-events-none select-none">
-                    {/* Visual Checkbox (Non-interactive, just status) */}
-                    <div className={cn(
-                        "flex items-center justify-center w-6 h-6 rounded-full border transition-all duration-300 shrink-0",
-                        task.is_completed
-                            ? "bg-red-500 border-red-500 text-white"
-                            : "border-zinc-500 bg-transparent"
-                    )}>
+                    {/* Visual Checkbox (Interactive) */}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            onToggle(task.id, !task.is_completed)
+                        }}
+                        className={cn(
+                            "flex items-center justify-center w-6 h-6 rounded-full border transition-all duration-300 shrink-0 cursor-pointer hover:scale-110 active:scale-95 pointer-events-auto",
+                            task.is_completed
+                                ? "bg-red-500 border-red-500 text-white"
+                                : "border-zinc-500 hover:border-zinc-300 bg-transparent"
+                        )}>
                         {task.is_completed && <Check size={14} strokeWidth={3} />}
-                    </div>
+                    </button>
 
                     <div className="flex flex-col gap-0.5">
                         <span className={cn(
@@ -115,6 +125,24 @@ const TaskItem = memo(function TaskItem({ task, onToggle, onDelete }: TaskItemPr
                             )}
                         </div>
                     </div>
+                </div>
+
+                {/* Desktop Hover Actions */}
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-auto">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onToggle(task.id, !task.is_completed) }}
+                        className="p-2 rounded-full hover:bg-green-500/20 text-zinc-400 hover:text-green-500 transition-colors"
+                        title={task.is_completed ? "Undo" : "Done"}
+                    >
+                        <Check size={18} />
+                    </button>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onDelete(task.id) }}
+                        className="p-2 rounded-full hover:bg-red-500/20 text-zinc-400 hover:text-red-500 transition-colors"
+                        title="Delete"
+                    >
+                        <Trash2 size={18} />
+                    </button>
                 </div>
             </motion.div>
         </div>
