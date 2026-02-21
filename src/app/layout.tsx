@@ -25,7 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${playfair.variable} ${nunito.variable} antialiased bg-[#0a0a0a] text-[#e5e5e0] selection:bg-[#3a0d0d] selection:text-white`}
+        className={`${playfair.variable} ${nunito.variable} antialiased bg-[#16130E] text-[#EDE8DF] selection:bg-[#7B896F]/40 selection:text-[#EDE8DF]`}
       >
         {children}
       </body>

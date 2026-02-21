@@ -2,14 +2,13 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
-import { Button } from "@/components/ui/button"
-import { Plus, LogOut } from "lucide-react"
-import { AddTask } from "@/components/AddTask"
-import TaskItem from "@/components/TaskItem"
-import { PushNotificationManager } from "@/components/PushNotificationManager"
-import { supabase } from "@/lib/supabase" // usage of the singleton
-import { format } from "date-fns"
+import { LogOut } from 'lucide-react'
+import { AddTask } from '@/components/AddTask'
+import TaskItem from '@/components/TaskItem'
+import { PushNotificationManager } from '@/components/PushNotificationManager'
+import { supabase } from '@/lib/supabase'
+import { format } from 'date-fns'
+import { AnimatePresence, motion } from 'framer-motion'
 
 export default function Home() {
   const router = useRouter()
@@ -19,105 +18,70 @@ export default function Home() {
 
   const fetchTasks = useCallback(async () => {
     if (!session?.user) return
-
     const { data, error } = await supabase
       .from('tasks')
       .select('*, categories(name, color)')
-      .order('is_completed', { ascending: true }) // uncompleted first
-      .order('due_date', { ascending: true })     // then by date
+      .order('is_completed', { ascending: true })
+      .order('due_date', { ascending: true })
       .order('created_at', { ascending: false })
-
-    if (error) {
-      console.error('Error fetching tasks:', error)
-    } else {
-      setTasks(data || [])
-    }
+    if (!error) setTasks(data || [])
   }, [session])
 
   useEffect(() => {
     let mounted = true
-
     const checkSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession()
         if (error) throw error
-
         if (mounted) {
           setSession(session)
           if (!session) {
             router.push('/login')
           } else {
-            // Auto-seed categories if none exist
             const { count } = await supabase.from('categories').select('*', { count: 'exact', head: true })
             if (count === 0) {
               await supabase.from('categories').insert([
-                { user_id: session.user.id, name: 'Personal', color: '#3b82f6' }, // Blue
-                { user_id: session.user.id, name: 'Work', color: '#f97316' },     // Orange
-                { user_id: session.user.id, name: 'Ideas', color: '#10b981' },    // Green
-                { user_id: session.user.id, name: 'Errands', color: '#ef4444' }   // Red
+                { user_id: session.user.id, name: 'Personal', color: '#7B896F' },
+                { user_id: session.user.id, name: 'Work', color: '#8B7355' },
+                { user_id: session.user.id, name: 'Ideas', color: '#7B896F' },
+                { user_id: session.user.id, name: 'Errands', color: '#C97070' }
               ])
             }
           }
         }
       } catch (error) {
-        console.error("Auth session error:", error)
+        console.error('Auth session error:', error)
       } finally {
         if (mounted) setLoading(false)
       }
     }
-
     checkSession()
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
       if (mounted) {
         setSession(session)
-        if (!session) {
-          router.push('/login')
-        }
+        if (!session) router.push('/login')
       }
     })
-
-    return () => {
-      mounted = false
-      subscription.unsubscribe()
-    }
+    return () => { mounted = false; subscription.unsubscribe() }
   }, [router])
 
   useEffect(() => {
-    if (session) {
-      fetchTasks()
-    }
+    if (session) fetchTasks()
   }, [session, fetchTasks])
 
   const handleToggleTask = useCallback(async (id: string, currentStatus: boolean) => {
-    // Optimistic update
     setTasks(prev => prev.map(t => t.id === id ? { ...t, is_completed: !currentStatus } : t))
-
     const { error } = await supabase
       .from('tasks')
       .update({ is_completed: !currentStatus } as any)
       .eq('id', id)
-
-    if (error) {
-      // Revert on error
-      fetchTasks()
-    }
+    if (error) fetchTasks()
   }, [fetchTasks])
 
   const handleDeleteTask = useCallback(async (id: string) => {
-    // Optimistic update
     setTasks(prev => prev.filter(t => t.id !== id))
-
-    const { error } = await supabase
-      .from('tasks')
-      .delete()
-      .eq('id', id)
-
-    if (error) {
-      fetchTasks()
-    }
+    const { error } = await supabase.from('tasks').delete().eq('id', id)
+    if (error) fetchTasks()
   }, [fetchTasks])
 
   const handleLogout = async () => {
@@ -129,77 +93,107 @@ export default function Home() {
   const completedTasks = useMemo(() => tasks.filter(t => t.is_completed), [tasks])
 
   if (loading) {
-    return <div className="flex h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950">Loading...</div>
+    return (
+      <div
+        className="flex h-screen items-center justify-center"
+        style={{ background: 'var(--cream)' }}
+      >
+        <div className="text-center">
+          <p className="font-serif text-2xl mb-1" style={{ color: 'var(--ink)' }}>Agenda</p>
+          <p className="font-sans text-sm" style={{ color: 'var(--ink-muted)' }}>Loading your sanctuary…</p>
+        </div>
+      </div>
+    )
   }
 
-  if (!session) {
-    return null
-  }
+  if (!session) return null
 
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-50 text-zinc-900 dark:bg-black dark:text-zinc-50 pb-24">
-      {/* Header */}
-      <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-white/80 p-4 backdrop-blur-md dark:bg-zinc-900/80 dark:border-zinc-800">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight">Today</h1>
-          <p className="text-sm text-zinc-500">{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <PushNotificationManager />
-          <Button variant="ghost" size="icon" className="rounded-full" onClick={handleLogout}>
-            <LogOut className="h-5 w-5 text-zinc-500" />
-          </Button>
-        </div>
-      </header>
+    <div
+      className="flex min-h-screen flex-col pb-28"
+      style={{ background: 'var(--cream)' }}
+    >
+      {/* Subtle warm ambient glow at top */}
+      <div
+        className="fixed top-0 left-0 right-0 h-64 pointer-events-none z-0"
+        style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(123,137,111,0.07) 0%, transparent 80%)' }}
+      />
 
       {/* Main Content */}
-      <main className="flex-1 p-4 max-w-2xl mx-auto w-full">
-        <div className="space-y-6">
-          <div className="space-y-3">
-            {activeTasks.length === 0 && completedTasks.length === 0 ? (
-              <div className="text-center py-20 opacity-50">
-                <p>No tasks yet.</p>
-                <p className="text-sm">Add one to get started!</p>
-              </div>
-            ) : null}
+      <main className="flex-1 px-5 max-w-2xl mx-auto w-full pt-14 relative z-10">
 
-            {/* New UI elements for Journal - Apple Style Header */}
-            <div className="flex items-center justify-between mb-6 pt-6">
-              <div>
-                <h1 className="text-4xl font-serif font-bold tracking-tight text-white/90 mb-1">
-                  Journal
-                </h1>
-                <p className="text-zinc-500 font-sans text-lg">
-                  {format(new Date(), 'EEEE, MMMM do')}
-                </p>
-              </div>
-              <PushNotificationManager />
-            </div>
-
-            {/* Subtle top glow instead of blob */}
-            <div className="fixed top-0 left-0 right-0 h-[200px] bg-gradient-to-b from-zinc-900/20 to-transparent pointer-events-none" />
-
-            {activeTasks.map(task => (
-              <TaskItem key={task.id} task={task} onToggle={handleToggleTask} onDelete={handleDeleteTask} />
-            ))}
+        {/* Journal Header */}
+        <div className="flex items-start justify-between mb-8">
+          <div>
+            <h1 className="font-serif text-5xl font-bold leading-none mb-2" style={{ color: 'var(--ink)' }}>
+              Journal
+            </h1>
+            <p className="font-sans text-base" style={{ color: 'var(--ink-muted)' }}>
+              {format(new Date(), 'EEEE, MMMM do')}
+            </p>
           </div>
-
-          {completedTasks.length > 0 && (
-            <div className="pt-4">
-              <h2 className="text-sm font-medium text-zinc-500 mb-3 px-1">Completed</h2>
-              <div className="space-y-3 opacity-60">
-                {completedTasks.map(task => (
-                  <TaskItem key={task.id} task={task} onToggle={handleToggleTask} onDelete={handleDeleteTask} />
-                ))}
-              </div>
-            </div>
-          )}
+          <div className="flex items-center gap-2 pt-1">
+            <PushNotificationManager />
+            <button
+              onClick={handleLogout}
+              className="w-9 h-9 flex items-center justify-center rounded-full transition-all duration-200 hover:opacity-70 active:scale-95"
+              style={{ color: 'var(--ink-muted)' }}
+              title="Sign out"
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
         </div>
+
+        {/* Empty State */}
+        {activeTasks.length === 0 && completedTasks.length === 0 && (
+          <div className="text-center py-24">
+            <p className="font-serif text-xl mb-1" style={{ color: 'var(--ink-muted)' }}>All caught up.</p>
+            <p className="font-sans text-sm" style={{ color: 'var(--ink-muted)', opacity: 0.6 }}>Tap + to add your first task.</p>
+          </div>
+        )}
+
+        {/* Active Tasks */}
+        <div className="space-y-0">
+          <AnimatePresence mode="popLayout">
+            {activeTasks.map(task => (
+              <TaskItem
+                key={task.id}
+                task={task}
+                onToggle={handleToggleTask}
+                onDelete={handleDeleteTask}
+              />
+            ))}
+          </AnimatePresence>
+        </div>
+
+        {/* Completed Tasks */}
+        {completedTasks.length > 0 && (
+          <div className="mt-8">
+            <p
+              className="font-sans text-xs uppercase tracking-widest mb-3 px-1"
+              style={{ color: 'var(--ink-muted)', opacity: 0.6 }}
+            >
+              Completed
+            </p>
+            <div className="space-y-0 opacity-60">
+              <AnimatePresence mode="popLayout">
+                {completedTasks.map(task => (
+                  <TaskItem
+                    key={task.id}
+                    task={task}
+                    onToggle={handleToggleTask}
+                    onDelete={handleDeleteTask}
+                  />
+                ))}
+              </AnimatePresence>
+            </div>
+          </div>
+        )}
       </main>
 
       {/* FAB */}
       <AddTask onTaskAdded={fetchTasks} />
     </div>
-  );
+  )
 }
